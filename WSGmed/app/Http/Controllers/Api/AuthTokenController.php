@@ -14,7 +14,7 @@ use App\Http\Traits\ApiResponseTrait;
 /**
  * @OA\Tag(
  * name="Auth",
- * description="API Endpoints for authentication and token management"
+ * description="API Endpoints for authentication and token management!"
  * )
  */
 
