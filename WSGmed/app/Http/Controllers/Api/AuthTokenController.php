@@ -34,7 +34,7 @@ class AuthTokenController extends Controller
      * @OA\Post(
      * path="/api/login",
      * tags={"Auth"},
-     * summary="Log in and get a JWT token",
+     * summary="Log in and get a JWT tokenn",
      * security={},
      * @OA\RequestBody(
      * required=true,
