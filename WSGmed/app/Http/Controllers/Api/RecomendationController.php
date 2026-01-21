@@ -8,7 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\DB;
+use App\Models\Recomendation;
 
 /**
  * @group Recommendations
@@ -34,6 +34,7 @@ class RecomendationController extends Controller
      *     operationId="getRecommendations",
      *     summary="Get all recommendations",
      *     tags={"Recommendations"},
+     *     security={{"bearerAuth": {}}},
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
@@ -46,10 +47,8 @@ class RecomendationController extends Controller
     *                 type="array",
     *                 @OA\Items(
     *                     type="object",
-    *                     @OA\Property(property="id", type="integer", example=1),
-    *                     @OA\Property(property="role", type="string", example="Doctor"),
+    *                     @OA\Property(property="role_name", type="string", example="doctor"),
     *                     @OA\Property(property="date", type="string", format="date", example="2025-05-12"),
-    *                     @OA\Property(property="type", type="string", example="Breathing exercises"),
     *                     @OA\Property(property="text", type="string", example="Perform breathing exercises 3 times a day for 10 minutes.")
     *                 )
     *             )
@@ -109,19 +108,21 @@ class RecomendationController extends Controller
         try {
             $patient = auth()->user();
 
-            $recommendations = DB::table('recomendations')
-                ->join('staff_patients', 'recomendations.staff_patient_id', '=', 'staff_patients.id')
-                ->join('staff', 'staff_patients.staff_id', '=', 'staff.id')
-                ->leftJoin('roles', 'staff.role_id', '=', 'roles.id')
-                ->where('staff_patients.patient_id', '=', $patient->id)
-                ->select([
-                    'recomendations.id as id',
-                    DB::raw("COALESCE(roles.name, '') as role"),
-                    'recomendations.date as date',
-                    'recomendations.type as type',
-                    'recomendations.text as text',
+            $recommendations = Recomendation::query()
+                ->where('patient_id', '=', $patient->id)
+                ->with([
+                    'staff:id,role_id',
+                    'staff.role:id,name',
                 ])
-                ->get();
+                ->get(['id', 'staff_id', 'date', 'text', 'patient_id'])
+                ->map(static function (Recomendation $recommendation): array {
+                    return [
+                        'role_name' => $recommendation->staff?->role?->name,
+                        'date' => $recommendation->date?->format('Y-m-d'),
+                        'text' => $recommendation->text,
+                    ];
+                })
+                ->values();
 
             return $this->successResponse($recommendations, 'Recommendations retrieved successfully.');
         } catch (QueryException $e) {

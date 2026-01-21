@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Database\QueryException;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
+use App\Models\Appointment;
 
 class MedicalVisitController extends Controller
 {
@@ -114,7 +114,7 @@ class MedicalVisitController extends Controller
                 $visitHour .= ':00';
             }
 
-            DB::table('appointments')->insert([
+            Appointment::query()->create([
                 'patient_id' => $user->id,
                 'staff_id' => null,
                 'staff_role_id' => $data['staff_role_id'],
@@ -124,8 +124,6 @@ class MedicalVisitController extends Controller
                 'comment' => $data['comment'],
                 'type' => 'home',
                 'status' => 'new',
-                'created_at' => $now,
-                'updated_at' => $now,
             ]);
 
             return $this->successResponse([], 'Medical visit scheduled successfully', 201);

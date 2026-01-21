@@ -10,8 +10,9 @@ use Carbon\Carbon;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use App\Models\PatientMedication;
+use App\Models\PatientMedicationConfirmation;
 
 /**
  * @OA\Tag(
@@ -46,7 +47,7 @@ class PatientMedicationController extends Controller
         *                     @OA\Property(property="name", type="string", example="Aspirin"),
         *                     @OA\Property(property="info", type="string", example="Pain reliever and fever reducer."),
         *                     @OA\Property(property="patient_medication_id", type="integer", example=10),
-        *                     @OA\Property(property="dosage", type="number", format="float", example=100),
+        *                     @OA\Property(property="dosage", type="string", example="1 tabletka"),
         *                     @OA\Property(property="unit", type="string", example="MG", enum={"MG","ML","TABLET"}),
         *                     @OA\Property(property="is_taken", type="boolean", example=false),
         *                     @OA\Property(property="med_taken", type="integer", example=1),
@@ -103,45 +104,48 @@ class PatientMedicationController extends Controller
         try {
             $today = Carbon::today()->toDateString();
 
-            $rows = DB::table('patient_medications as pm')
-                ->join('medications as m', 'pm.medication_id', '=', 'm.id')
-                ->leftJoin('patient_medication_confirmations as pmc', function ($join) use ($today) {
-                    $join->on('pmc.patient_medication_id', '=', 'pm.id')
-                        ->where('pmc.planned_date', '=', $today)
-                        ->whereNotNull('pmc.confirmation_date');
-                })
-                ->where('pm.patient_id', '=', $patientId)
-                ->where('pm.start_date', '<=', $today)
+            $patientMedications = PatientMedication::query()
+                ->where('patient_id', '=', $patientId)
+                ->whereDate('start_date', '<=', $today)
                 ->where(function ($query) use ($today) {
-                    $query->whereNull('pm.end_date')
-                        ->orWhere('pm.end_date', '>=', $today);
+                    $query->whereNull('end_date')
+                        ->orWhereDate('end_date', '>=', $today);
                 })
-                ->select([
-                    'm.name as name',
-                    'm.info as info',
-                    'pm.id as patient_medication_id',
-                    'pm.dosage as dosage',
-                    'pm.unit as unit',
-                    DB::raw('CASE WHEN pmc.id IS NULL THEN 0 ELSE 1 END as is_taken'),
+                ->with([
+                    'medication:id,name,info',
                 ])
-                ->orderBy('pm.id')
-                ->get();
+                ->orderBy('id')
+                ->get(['id', 'medication_id', 'dosage', 'unit']);
 
-            $medAll = $rows->count();
-            $medTaken = $rows->filter(fn ($row) => (int) $row->is_taken === 1)->count();
+            $patientMedicationIds = $patientMedications->pluck('id')->all();
 
-            $medications = $rows->map(function ($row) use ($medTaken, $medAll) {
-                return [
-                    'name' => $row->name,
-                    'info' => $row->info,
-                    'patient_medication_id' => (int) $row->patient_medication_id,
-                    'dosage' => (float) $row->dosage,
-                    'unit' => $row->unit,
-                    'is_taken' => (bool) $row->is_taken,
-                    'med_taken' => $medTaken,
-                    'med_all' => $medAll,
-                ];
-            });
+            $takenTodayIds = empty($patientMedicationIds)
+                ? collect()
+                : PatientMedicationConfirmation::query()
+                    ->whereIn('patient_medication_id', $patientMedicationIds)
+                    ->whereDate('planned_date', '=', $today)
+                    ->whereNotNull('confirmation_date')
+                    ->pluck('patient_medication_id')
+                    ->unique();
+
+            $takenIdSet = array_fill_keys($takenTodayIds->all(), true);
+            $medAll = $patientMedications->count();
+            $medTaken = count($takenIdSet);
+
+            $medications = $patientMedications
+                ->map(function (PatientMedication $pm) use ($takenIdSet, $medTaken, $medAll) {
+                    return [
+                        'name' => $pm->medication?->name,
+                        'info' => $pm->medication?->info,
+                        'patient_medication_id' => (int) $pm->id,
+                        'dosage' => (string) $pm->dosage,
+                        'unit' => $pm->unit,
+                        'is_taken' => isset($takenIdSet[$pm->id]),
+                        'med_taken' => $medTaken,
+                        'med_all' => $medAll,
+                    ];
+                })
+                ->values();
 
             return $this->successResponse($medications, 'Medications retrieved successfully.');
         } catch (QueryException $e) {
@@ -277,38 +281,17 @@ class PatientMedicationController extends Controller
                 $patientMedicationId = (int) $item['patient_medication_id'];
                 $plannedDate = $item['current_date'];
 
-                $updated = DB::table('patient_medication_confirmations')
-                    ->where('patient_medication_id', '=', $patientMedicationId)
-                    ->where('planned_date', '=', $plannedDate)
-                    ->whereNull('confirmation_date')
-                    ->update([
-                        'confirmation_date' => $now,
-                        'updated_at' => $now,
-                    ]);
-
-                if ($updated > 0) {
-                    $confirmedCount++;
-                    continue;
-                }
-
-                $alreadyConfirmed = DB::table('patient_medication_confirmations')
-                    ->where('patient_medication_id', '=', $patientMedicationId)
-                    ->where('planned_date', '=', $plannedDate)
-                    ->whereNotNull('confirmation_date')
-                    ->exists();
-
-                if ($alreadyConfirmed) {
-                    continue;
-                }
-
-                DB::table('patient_medication_confirmations')->insert([
+                $confirmation = PatientMedicationConfirmation::query()->firstOrNew([
                     'patient_medication_id' => $patientMedicationId,
                     'planned_date' => $plannedDate,
-                    'confirmation_date' => $now,
-                    'created_at' => $now,
-                    'updated_at' => $now,
                 ]);
 
+                if ($confirmation->exists && $confirmation->confirmation_date !== null) {
+                    continue;
+                }
+
+                $confirmation->confirmation_date = $now;
+                $confirmation->save();
                 $confirmedCount++;
             }
 
