@@ -15,7 +15,6 @@ return new class extends Migration
             $table->id();
             $table->foreignId('patient_medication_id')->constrained('patient_medications');
 
-            $table->date('planned_date');
             $table->dateTime('confirmation_date')->nullable();
 
             $table->timestamps();
