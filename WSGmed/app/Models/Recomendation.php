@@ -14,6 +14,7 @@ class Recomendation extends Model
         'patient_id',
         'staff_id',
         'date',
+        'tittle',
         'text',
     ];
 
