@@ -69,7 +69,7 @@ class FullSeeder extends Seeder
                     'staff_id' => $staff->random()->id,
                     'date' => now()->subDays(rand(0, 30)),
                     'text' => 'This is a recommendation text for patient ' . $patient->id,
-                    'title' => 'Recommendation ' . ($k + 1)
+                    'tittle' => 'Recommendation ' . ($k + 1)
                 ]);
             }
 
