@@ -41,18 +41,21 @@ class PatientMedicationController extends Controller
         *             @OA\Property(property="message", type="string", example="Medications retrieved successfully."),
         *             @OA\Property(
         *                 property="data",
-        *                 type="array",
-        *                 @OA\Items(
-        *                     type="object",
-        *                     @OA\Property(property="name", type="string", example="Aspirin"),
-        *                     @OA\Property(property="info", type="string", example="Pain reliever and fever reducer."),
-        *                     @OA\Property(property="patient_medication_id", type="integer", example=10),
-        *                     @OA\Property(property="dosage", type="string", example="1 tabletka"),
-        *                     @OA\Property(property="unit", type="string", example="MG", enum={"MG","ML","TABLET"}),
-        *                     @OA\Property(property="is_taken", type="boolean", example=false),
-        *                     @OA\Property(property="med_taken", type="integer", example=1),
-        *                     @OA\Property(property="med_all", type="integer", example=3)
-        *                 )
+          *                 type="object",
+          *                 @OA\Property(property="med_taken", type="integer", example=2),
+          *                 @OA\Property(property="med_all", type="integer", example=3),
+          *                 @OA\Property(
+          *                     property="medications",
+          *                     type="array",
+          *                     @OA\Items(
+          *                         type="object",
+          *                         @OA\Property(property="name", type="string", example="Aspirin"),
+          *                         @OA\Property(property="info", type="string", example="Pain reliever and fever reducer."),
+          *                         @OA\Property(property="patient_medication_id", type="integer", example=10),
+          *                         @OA\Property(property="dosage", type="string", example="1 tabletka"),
+          *                         @OA\Property(property="is_taken", type="boolean", example=false)
+          *                     )
+          *                 )
         *             )
      *         )
      *     ),
@@ -115,7 +118,7 @@ class PatientMedicationController extends Controller
                     'medication:id,name,info',
                 ])
                 ->orderBy('id')
-                ->get(['id', 'medication_id', 'dosage', 'unit']);
+                ->get(['id', 'medication_id', 'dosage']);
 
             $patientMedicationIds = $patientMedications->pluck('id')->all();
 
@@ -123,8 +126,8 @@ class PatientMedicationController extends Controller
                 ? collect()
                 : PatientMedicationConfirmation::query()
                     ->whereIn('patient_medication_id', $patientMedicationIds)
-                    ->whereDate('planned_date', '=', $today)
                     ->whereNotNull('confirmation_date')
+                    ->whereDate('confirmation_date', '=', $today)
                     ->pluck('patient_medication_id')
                     ->unique();
 
@@ -133,21 +136,22 @@ class PatientMedicationController extends Controller
             $medTaken = count($takenIdSet);
 
             $medications = $patientMedications
-                ->map(function (PatientMedication $pm) use ($takenIdSet, $medTaken, $medAll) {
+                ->map(function (PatientMedication $pm) use ($takenIdSet) {
                     return [
                         'name' => $pm->medication?->name,
                         'info' => $pm->medication?->info,
                         'patient_medication_id' => (int) $pm->id,
                         'dosage' => (string) $pm->dosage,
-                        'unit' => $pm->unit,
                         'is_taken' => isset($takenIdSet[$pm->id]),
-                        'med_taken' => $medTaken,
-                        'med_all' => $medAll,
                     ];
                 })
                 ->values();
 
-            return $this->successResponse($medications, 'Medications retrieved successfully.');
+            return $this->successResponse([
+                'med_taken' => $medTaken,
+                'med_all' => $medAll,
+                'medications' => $medications,
+            ], 'Medications retrieved successfully.');
         } catch (QueryException $e) {
             Log::error('Service unavailable - DB connection issue in PatientMedicationController@getMedicationsByDate: ' . $e->getMessage());
             return $this->errorResponse(ApiErrorCodes::SERVICE_UNAVAILABLE);
@@ -161,7 +165,7 @@ class PatientMedicationController extends Controller
      * @OA\Post(
      *     path="/api/medications/confirm",
      *     summary="Confirm medication intake",
-        *     description="Saves medication confirmations for the given day by inserting (or updating) a confirmation record with planned_date and confirmation_date.",
+             *     description="Creates (or removes) today's medication confirmations.",
      *     operationId="confirmMedication",
      *     tags={"Medications"},
      *     security={{"bearerAuth": {}}},
@@ -175,16 +179,15 @@ class PatientMedicationController extends Controller
         *                 type="array",
         *                 @OA\Items(
         *                     type="object",
-        *                     required={"patient_medication_id","current_date","is_taken"},
+          *                     required={"patient_medication_id","is_taken"},
         *                     @OA\Property(property="patient_medication_id", type="integer", example=10),
-        *                     @OA\Property(property="current_date", type="string", format="date", example="2026-01-09"),
         *                     @OA\Property(property="is_taken", type="boolean", example=true)
         *                 )
         *             ),
         *             example={
         *                 "medications": {
-        *                     {"patient_medication_id": 10, "current_date": "2026-01-09", "is_taken": true},
-        *                     {"patient_medication_id": 11, "current_date": "2026-01-09", "is_taken": false}
+          *                     {"patient_medication_id": 10, "is_taken": true},
+          *                     {"patient_medication_id": 11, "is_taken": false}
         *                 }
         *             }
      *         )
@@ -195,11 +198,17 @@ class PatientMedicationController extends Controller
      *         @OA\JsonContent(
      *             type="object",
      *             @OA\Property(property="success", type="boolean", example=true),
-        *             @OA\Property(property="message", type="string", example="Medication confirmations saved"),
-     *             example={
-     *                 "success": true,
-        *                 "message": "Medication confirmations saved"
-     *             }
+          *             @OA\Property(property="message", type="string", example="Medication confirmations saved"),
+          *             @OA\Property(
+          *                 property="data",
+          *                 type="object",
+          *                 @OA\Property(property="confirmed", type="integer", example=2)
+          *             ),
+      *             example={
+      *                 "success": true,
+          *                 "message": "Medication confirmations saved",
+          *                 "data": {"confirmed": 2}
+      *             }
      *         )
      *     ),
      *     @OA\Response(
@@ -259,7 +268,6 @@ class PatientMedicationController extends Controller
                         return $query->where('patient_id', $patientId);
                     }),
                 ],
-                'medications.*.current_date' => 'required|date_format:Y-m-d',
                 'medications.*.is_taken' => 'required|boolean',
             ], [
                 'medications.*.patient_medication_id.exists' => 'One or more medication IDs are invalid or do not belong to this patient.',
@@ -274,25 +282,30 @@ class PatientMedicationController extends Controller
             $confirmedCount = 0;
 
             foreach ($validated['medications'] as $item) {
-                if (!$item['is_taken']) {
-                    continue;
+                $id = (int) $item['patient_medication_id'];
+
+                if ($item['is_taken']) {
+                    $existsToday = PatientMedicationConfirmation::query()
+                        ->where('patient_medication_id', $id)
+                        ->whereDate('confirmation_date', Carbon::today())
+                        ->exists();
+
+                    if ($existsToday) {
+                        continue;
+                    }
+
+                    PatientMedicationConfirmation::create([
+                        'patient_medication_id' => $id,
+                        'confirmation_date' => $now,
+                    ]);
+
+                    $confirmedCount++;
+                } else {
+                    PatientMedicationConfirmation::query()
+                        ->where('patient_medication_id', $id)
+                        ->whereDate('confirmation_date', Carbon::today())
+                        ->delete();
                 }
-
-                $patientMedicationId = (int) $item['patient_medication_id'];
-                $plannedDate = $item['current_date'];
-
-                $confirmation = PatientMedicationConfirmation::query()->firstOrNew([
-                    'patient_medication_id' => $patientMedicationId,
-                    'planned_date' => $plannedDate,
-                ]);
-
-                if ($confirmation->exists && $confirmation->confirmation_date !== null) {
-                    continue;
-                }
-
-                $confirmation->confirmation_date = $now;
-                $confirmation->save();
-                $confirmedCount++;
             }
 
             return $this->successResponse([

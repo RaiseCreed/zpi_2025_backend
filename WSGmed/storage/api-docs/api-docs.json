@@ -878,49 +878,45 @@
                                             "example": "Medications retrieved successfully."
                                         },
                                         "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "properties": {
-                                                    "name": {
-                                                        "type": "string",
-                                                        "example": "Aspirin"
-                                                    },
-                                                    "info": {
-                                                        "type": "string",
-                                                        "example": "Pain reliever and fever reducer."
-                                                    },
-                                                    "patient_medication_id": {
-                                                        "type": "integer",
-                                                        "example": 10
-                                                    },
-                                                    "dosage": {
-                                                        "type": "string",
-                                                        "example": "1 tabletka"
-                                                    },
-                                                    "unit": {
-                                                        "type": "string",
-                                                        "enum": [
-                                                            "MG",
-                                                            "ML",
-                                                            "TABLET"
-                                                        ],
-                                                        "example": "MG"
-                                                    },
-                                                    "is_taken": {
-                                                        "type": "boolean",
-                                                        "example": false
-                                                    },
-                                                    "med_taken": {
-                                                        "type": "integer",
-                                                        "example": 1
-                                                    },
-                                                    "med_all": {
-                                                        "type": "integer",
-                                                        "example": 3
-                                                    }
+                                            "properties": {
+                                                "med_taken": {
+                                                    "type": "integer",
+                                                    "example": 2
                                                 },
-                                                "type": "object"
-                                            }
+                                                "med_all": {
+                                                    "type": "integer",
+                                                    "example": 3
+                                                },
+                                                "medications": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "name": {
+                                                                "type": "string",
+                                                                "example": "Aspirin"
+                                                            },
+                                                            "info": {
+                                                                "type": "string",
+                                                                "example": "Pain reliever and fever reducer."
+                                                            },
+                                                            "patient_medication_id": {
+                                                                "type": "integer",
+                                                                "example": 10
+                                                            },
+                                                            "dosage": {
+                                                                "type": "string",
+                                                                "example": "1 tabletka"
+                                                            },
+                                                            "is_taken": {
+                                                                "type": "boolean",
+                                                                "example": false
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
                                         }
                                     },
                                     "type": "object"
@@ -1029,7 +1025,7 @@
                     "Medications"
                 ],
                 "summary": "Confirm medication intake",
-                "description": "Saves medication confirmations for the given day by inserting (or updating) a confirmation record with planned_date and confirmation_date.",
+                "description": "Creates (or removes) today's medication confirmations.",
                 "operationId": "confirmMedication",
                 "requestBody": {
                     "required": true,
@@ -1045,18 +1041,12 @@
                                         "items": {
                                             "required": [
                                                 "patient_medication_id",
-                                                "current_date",
                                                 "is_taken"
                                             ],
                                             "properties": {
                                                 "patient_medication_id": {
                                                     "type": "integer",
                                                     "example": 10
-                                                },
-                                                "current_date": {
-                                                    "type": "string",
-                                                    "format": "date",
-                                                    "example": "2026-01-09"
                                                 },
                                                 "is_taken": {
                                                     "type": "boolean",
@@ -1073,12 +1063,10 @@
                                 "medications": [
                                     {
                                         "patient_medication_id": 10,
-                                        "current_date": "2026-01-09",
                                         "is_taken": true
                                     },
                                     {
                                         "patient_medication_id": 11,
-                                        "current_date": "2026-01-09",
                                         "is_taken": false
                                     }
                                 ]
@@ -1100,13 +1088,25 @@
                                         "message": {
                                             "type": "string",
                                             "example": "Medication confirmations saved"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "confirmed": {
+                                                    "type": "integer",
+                                                    "example": 2
+                                                }
+                                            },
+                                            "type": "object"
                                         }
                                     },
                                     "type": "object"
                                 },
                                 "example": {
                                     "success": true,
-                                    "message": "Medication confirmations saved"
+                                    "message": "Medication confirmations saved",
+                                    "data": {
+                                        "confirmed": 2
+                                    }
                                 }
                             }
                         }
@@ -1241,6 +1241,10 @@
                                                         "type": "string",
                                                         "format": "date",
                                                         "example": "2025-05-12"
+                                                    },
+                                                    "title": {
+                                                        "type": "string",
+                                                        "example": "Recommendation 1"
                                                     },
                                                     "text": {
                                                         "type": "string",
