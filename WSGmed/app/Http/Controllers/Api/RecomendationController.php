@@ -7,6 +7,7 @@ use App\Http\Traits\ApiResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use App\Http\Controllers\Controller;
 use App\Models\Recomendation;
 
@@ -27,32 +28,47 @@ class RecomendationController extends Controller
     /**
      * Get all recommendations
      * 
-    * Returns a list of recommendations for the authenticated patient.
+        * Returns a list of recommendations for the authenticated patient.
      * 
      * @OA\Get(
      *     path="/api/recommendations",
      *     operationId="getRecommendations",
-     *     summary="Get all recommendations",
+        *     summary="Get all recommendations",
      *     tags={"Recommendations"},
      *     security={{"bearerAuth": {}}},
+        *     description="Returns recommendations for the authenticated patient, sorted by date descending (newest first). Results are paginated (20 items per page).",
+        *     @OA\Parameter(
+        *         name="page",
+        *         in="query",
+        *         required=false,
+        *         description="Page number for pagination (20 items per page).",
+        *         @OA\Schema(type="integer", example=1, minimum=1)
+        *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
      *         @OA\JsonContent(
-    *             type="object",
-    *             @OA\Property(property="success", type="boolean", example=true),
-    *             @OA\Property(property="message", type="string", example="Recommendations retrieved successfully."),
-    *             @OA\Property(
-    *                 property="data",
-    *                 type="array",
-    *                 @OA\Items(
-    *                     type="object",
-    *                     @OA\Property(property="role_name", type="string", example="doctor"),
-    *                     @OA\Property(property="date", type="string", format="date", example="2025-05-12"),
-    *                     @OA\Property(property="title", type="string", example="Recommendation 1"),
-    *                     @OA\Property(property="text", type="string", example="Perform breathing exercises 3 times a day for 10 minutes.")
-    *                 )
-    *             )
+        *             type="object",
+        *             @OA\Property(property="success", type="boolean", example=true),
+        *             @OA\Property(property="message", type="string", example="Recommendations retrieved successfully."),
+        *             @OA\Property(
+        *                 property="data",
+        *                 type="object",
+        *                 @OA\Property(property="current_page", type="integer", example=1),
+        *                 @OA\Property(property="per_page", type="integer", example=20),
+        *                 @OA\Property(property="total", type="integer", example=42),
+        *                 @OA\Property(
+        *                     property="data",
+        *                     type="array",
+        *                     @OA\Items(
+        *                         type="object",
+        *                         @OA\Property(property="role_name", type="string", example="doctor"),
+        *                         @OA\Property(property="date", type="string", format="date", example="2025-05-12"),
+        *                         @OA\Property(property="title", type="string", example="Recommendation 1"),
+        *                         @OA\Property(property="text", type="string", example="Perform breathing exercises 3 times a day for 10 minutes.")
+        *                     )
+        *                 )
+        *             )
      *         )
      *     ),
      *     @OA\Response(
@@ -109,22 +125,25 @@ class RecomendationController extends Controller
         try {
             $patient = auth()->user();
 
+            $table = (new Recomendation())->getTable();
+            $titleColumn = Schema::hasColumn($table, 'tittle') ? 'tittle' : 'title';
+
             $recommendations = Recomendation::query()
-                ->where('patient_id', '=', $patient->id)
-                ->with([
-                    'staff:id,role_id',
-                    'staff.role:id,name',
-                ])
-                ->get(['id', 'staff_id', 'date', 'title', 'text', 'patient_id'])
-                ->map(static function (Recomendation $recommendation): array {
+                ->where('patient_id', $patient->id)
+                ->with(['staff.role:id,name'])
+                ->orderByDesc('date')
+                ->paginate(20, ['id', 'staff_id', 'date', $titleColumn, 'text', 'patient_id'])
+                ->through(static function (Recomendation $recommendation) use ($titleColumn): array {
+                    $titleValue = $recommendation->getAttribute($titleColumn);
+
                     return [
                         'role_name' => $recommendation->staff?->role?->name,
                         'date' => $recommendation->date?->format('Y-m-d'),
-                        'title' => $recommendation->title,
+                        'title' => $titleValue,
+                        'tittle' => $titleValue,
                         'text' => $recommendation->text,
                     ];
-                })
-                ->values();
+                });
 
             return $this->successResponse($recommendations, 'Recommendations retrieved successfully.');
         } catch (QueryException $e) {
