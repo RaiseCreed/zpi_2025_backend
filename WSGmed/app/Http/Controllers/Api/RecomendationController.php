@@ -63,7 +63,7 @@ class RecomendationController extends Controller
     *                         type="object",
     *                         @OA\Property(property="role_name", type="string", example="doctor"),
     *                         @OA\Property(property="date", type="string", format="date", example="2025-05-12"),
-    *                         @OA\Property(property="title", type="string", example="Recommendation 1"),
+    *                         @OA\Property(property="tittle", type="string", example="Recommendation 1"),
     *                         @OA\Property(property="text", type="string", example="Perform breathing exercises 3 times a day for 10 minutes.")
     *                     )
     *                 )

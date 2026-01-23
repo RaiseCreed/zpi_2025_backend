@@ -1299,7 +1299,7 @@
                                                                 "format": "date",
                                                                 "example": "2025-05-12"
                                                             },
-                                                            "title": {
+                                                            "tittle": {
                                                                 "type": "string",
                                                                 "example": "Recommendation 1"
                                                             },
