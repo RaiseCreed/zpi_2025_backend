@@ -26,48 +26,34 @@ class RecomendationController extends Controller
 
     /**
      * Get all recommendations
-     * 
-    * Returns a list of recommendations for the authenticated patient.
-     * 
+     *
+     * Returns a list of recommendations for the authenticated patient.
+     *
      * @OA\Get(
      *     path="/api/recommendations",
      *     operationId="getRecommendations",
-    *     summary="Get all recommendations",
+     *     summary="Get all recommendations",
      *     tags={"Recommendations"},
      *     security={{"bearerAuth": {}}},
-    *     description="Returns recommendations for the authenticated patient, sorted by date descending (newest first). Results are paginated (20 items per page).",
-    *     @OA\Parameter(
-    *         name="page",
-    *         in="query",
-    *         required=false,
-    *         description="Page number for pagination (20 items per page).",
-    *         @OA\Schema(type="integer", example=1, minimum=1)
-    *     ),
+     *     description="Returns recommendations for the authenticated patient.",
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
      *         @OA\JsonContent(
-    *             type="object",
-    *             @OA\Property(property="success", type="boolean", example=true),
-    *             @OA\Property(property="message", type="string", example="Recommendations retrieved successfully."),
-    *             @OA\Property(
-    *                 property="data",
-    *                 type="object",
-    *                 @OA\Property(property="current_page", type="integer", example=1),
-    *                 @OA\Property(property="per_page", type="integer", example=20),
-    *                 @OA\Property(property="total", type="integer", example=42),
-    *                 @OA\Property(
-    *                     property="data",
-    *                     type="array",
-    *                     @OA\Items(
-    *                         type="object",
-    *                         @OA\Property(property="role_name", type="string", example="doctor"),
-    *                         @OA\Property(property="date", type="string", format="date", example="2025-05-12"),
-    *                         @OA\Property(property="tittle", type="string", example="Recommendation 1"),
-    *                         @OA\Property(property="text", type="string", example="Perform breathing exercises 3 times a day for 10 minutes.")
-    *                     )
-    *                 )
-    *             )
+     *             type="object",
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Recommendations retrieved successfully."),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="array",
+     *                 @OA\Items(
+     *                     type="object",
+     *                     @OA\Property(property="role_name", type="string", example="doctor"),
+     *                     @OA\Property(property="date", type="string", format="date", example="2025-05-12"),
+     *                     @OA\Property(property="tittle", type="string", example="Recommendation 1"),
+     *                     @OA\Property(property="text", type="string", example="Perform breathing exercises 3 times a day for 10 minutes.")
+     *                 )
+     *             )
      *         )
      *     ),
      *     @OA\Response(
@@ -127,9 +113,8 @@ class RecomendationController extends Controller
             $recommendations = Recomendation::query()
                 ->where('patient_id', $patient->id)
                 ->with(['staff.role:id,name'])
-                ->orderByDesc('date')
-                ->paginate(20, ['id', 'staff_id', 'date', 'tittle', 'text', 'patient_id'])
-                ->through(static fn (Recomendation $recommendation): array => [
+                ->get(['id', 'staff_id', 'date', 'tittle', 'text', 'patient_id'])
+                ->map(static fn (Recomendation $recommendation): array => [
                     'role_name' => $recommendation->staff?->role?->name,
                     'date' => $recommendation->date?->format('Y-m-d'),
                     'tittle' => $recommendation->tittle,

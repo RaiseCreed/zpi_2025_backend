@@ -860,21 +860,8 @@
                     "Medications"
                 ],
                 "summary": "Get patient's medications for today",
-                "description": "Returns a paginated list of medications assigned to the logged-in patient for today based on start_date/end_date and marks them as taken if a confirmation exists for today. Sorted by newest first (patient_medications.id DESC).",
+                "description": "Returns a list of medications assigned to the logged-in patient for today based on start_date/end_date and marks them as taken if a confirmation exists for today.",
                 "operationId": "getMedicationsByDate",
-                "parameters": [
-                    {
-                        "name": "page",
-                        "in": "query",
-                        "description": "Page number for pagination (20 items per page).",
-                        "required": false,
-                        "schema": {
-                            "type": "integer",
-                            "minimum": 1,
-                            "example": 1
-                        }
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "List of medications",
@@ -901,49 +888,32 @@
                                                     "example": 3
                                                 },
                                                 "medications": {
-                                                    "properties": {
-                                                        "current_page": {
-                                                            "type": "integer",
-                                                            "example": 1
-                                                        },
-                                                        "per_page": {
-                                                            "type": "integer",
-                                                            "example": 20
-                                                        },
-                                                        "total": {
-                                                            "type": "integer",
-                                                            "example": 42
-                                                        },
-                                                        "data": {
-                                                            "type": "array",
-                                                            "items": {
-                                                                "properties": {
-                                                                    "name": {
-                                                                        "type": "string",
-                                                                        "example": "Aspirin"
-                                                                    },
-                                                                    "info": {
-                                                                        "type": "string",
-                                                                        "example": "Pain reliever and fever reducer."
-                                                                    },
-                                                                    "patient_medication_id": {
-                                                                        "type": "integer",
-                                                                        "example": 10
-                                                                    },
-                                                                    "dosage": {
-                                                                        "type": "string",
-                                                                        "example": "1 tabletka"
-                                                                    },
-                                                                    "is_taken": {
-                                                                        "type": "boolean",
-                                                                        "example": false
-                                                                    }
-                                                                },
-                                                                "type": "object"
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "name": {
+                                                                "type": "string",
+                                                                "example": "Aspirin"
+                                                            },
+                                                            "info": {
+                                                                "type": "string",
+                                                                "example": "Pain reliever and fever reducer."
+                                                            },
+                                                            "patient_medication_id": {
+                                                                "type": "integer",
+                                                                "example": 10
+                                                            },
+                                                            "dosage": {
+                                                                "type": "string",
+                                                                "example": "1 tabletka"
+                                                            },
+                                                            "is_taken": {
+                                                                "type": "boolean",
+                                                                "example": false
                                                             }
-                                                        }
-                                                    },
-                                                    "type": "object"
+                                                        },
+                                                        "type": "object"
+                                                    }
                                                 }
                                             },
                                             "type": "object"
@@ -1241,22 +1211,9 @@
                 "tags": [
                     "Recommendations"
                 ],
-                "summary": "Get all recommendations (paginated)",
-                "description": "Returns recommendations for the authenticated patient, sorted by date descending (newest first). Results are paginated (20 items per page).",
+                "summary": "Get all recommendations",
+                "description": "Returns recommendations for the authenticated patient.",
                 "operationId": "getRecommendations",
-                "parameters": [
-                    {
-                        "name": "page",
-                        "in": "query",
-                        "description": "Page number for pagination (20 items per page).",
-                        "required": false,
-                        "schema": {
-                            "type": "integer",
-                            "minimum": 1,
-                            "example": 1
-                        }
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "Successful operation",
@@ -1273,46 +1230,29 @@
                                             "example": "Recommendations retrieved successfully."
                                         },
                                         "data": {
-                                            "properties": {
-                                                "current_page": {
-                                                    "type": "integer",
-                                                    "example": 1
-                                                },
-                                                "per_page": {
-                                                    "type": "integer",
-                                                    "example": 20
-                                                },
-                                                "total": {
-                                                    "type": "integer",
-                                                    "example": 42
-                                                },
-                                                "data": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "properties": {
-                                                            "role_name": {
-                                                                "type": "string",
-                                                                "example": "doctor"
-                                                            },
-                                                            "date": {
-                                                                "type": "string",
-                                                                "format": "date",
-                                                                "example": "2025-05-12"
-                                                            },
-                                                            "tittle": {
-                                                                "type": "string",
-                                                                "example": "Recommendation 1"
-                                                            },
-                                                            "text": {
-                                                                "type": "string",
-                                                                "example": "Perform breathing exercises 3 times a day for 10 minutes."
-                                                            }
-                                                        },
-                                                        "type": "object"
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "role_name": {
+                                                        "type": "string",
+                                                        "example": "doctor"
+                                                    },
+                                                    "date": {
+                                                        "type": "string",
+                                                        "format": "date",
+                                                        "example": "2025-05-12"
+                                                    },
+                                                    "tittle": {
+                                                        "type": "string",
+                                                        "example": "Recommendation 1"
+                                                    },
+                                                    "text": {
+                                                        "type": "string",
+                                                        "example": "Perform breathing exercises 3 times a day for 10 minutes."
                                                     }
-                                                }
-                                            },
-                                            "type": "object"
+                                                },
+                                                "type": "object"
+                                            }
                                         }
                                     },
                                     "type": "object"

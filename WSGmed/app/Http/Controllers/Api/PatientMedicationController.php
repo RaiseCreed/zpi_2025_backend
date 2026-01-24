@@ -24,55 +24,41 @@ class PatientMedicationController extends Controller
 {
     use ApiResponseTrait;
 
-    /**
-     * @OA\Get(
-     *     path="/api/medications",
-        *     summary="Get patient's medications for today",
-          *     description="Returns a paginated list of medications assigned to the logged-in patient for today based on start_date/end_date and marks them as taken if a confirmation exists for today. Sorted by newest first (patient_medications.id DESC).",
-     *     operationId="getMedicationsByDate",
-     *     tags={"Medications"},
-     *     security={{"bearerAuth": {}}},
-      *     @OA\Parameter(
-      *         name="page",
-      *         in="query",
-      *         required=false,
-      *         description="Page number for pagination (20 items per page).",
-      *         @OA\Schema(type="integer", example=1, minimum=1)
-      *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="List of medications",
-     *         @OA\JsonContent(
-        *             type="object",
-        *             @OA\Property(property="success", type="boolean", example=true),
-        *             @OA\Property(property="message", type="string", example="Medications retrieved successfully."),
-        *             @OA\Property(
-        *                 property="data",
-          *                 type="object",
-          *                 @OA\Property(property="med_taken", type="integer", example=2),
-          *                 @OA\Property(property="med_all", type="integer", example=3),
-          *                 @OA\Property(
-          *                     property="medications",
-                    *                     type="object",
-                    *                     @OA\Property(property="current_page", type="integer", example=1),
-                    *                     @OA\Property(property="per_page", type="integer", example=20),
-                    *                     @OA\Property(property="total", type="integer", example=42),
-                    *                     @OA\Property(
-                    *                         property="data",
-                    *                         type="array",
-                    *                         @OA\Items(
-                    *                             type="object",
-                    *                             @OA\Property(property="name", type="string", example="Aspirin"),
-                    *                             @OA\Property(property="info", type="string", example="Pain reliever and fever reducer."),
-                    *                             @OA\Property(property="patient_medication_id", type="integer", example=10),
-                    *                             @OA\Property(property="dosage", type="string", example="1 tabletka"),
-                    *                             @OA\Property(property="is_taken", type="boolean", example=false)
-                    *                         )
-                    *                     )
-          *                 )
-        *             )
-     *         )
-     *     ),
+        /**
+         * @OA\Get(
+         *     path="/api/medications",
+         *     summary="Get patient's medications for today",
+         *     description="Returns a list of medications assigned to the logged-in patient for today based on start_date/end_date and marks them as taken if a confirmation exists for today.",
+         *     operationId="getMedicationsByDate",
+         *     tags={"Medications"},
+         *     security={{"bearerAuth": {}}},
+         *     @OA\Response(
+         *         response=200,
+         *         description="List of medications",
+         *         @OA\JsonContent(
+         *             type="object",
+         *             @OA\Property(property="success", type="boolean", example=true),
+         *             @OA\Property(property="message", type="string", example="Medications retrieved successfully."),
+         *             @OA\Property(
+         *                 property="data",
+         *                 type="object",
+         *                 @OA\Property(property="med_taken", type="integer", example=2),
+         *                 @OA\Property(property="med_all", type="integer", example=3),
+         *                 @OA\Property(
+         *                     property="medications",
+         *                     type="array",
+         *                     @OA\Items(
+         *                         type="object",
+         *                         @OA\Property(property="name", type="string", example="Aspirin"),
+         *                         @OA\Property(property="info", type="string", example="Pain reliever and fever reducer."),
+         *                         @OA\Property(property="patient_medication_id", type="integer", example=10),
+         *                         @OA\Property(property="dosage", type="string", example="1 tabletka"),
+         *                         @OA\Property(property="is_taken", type="boolean", example=false)
+         *                     )
+         *                 )
+         *             )
+         *         )
+         *     ),
      *     @OA\Response(
      *         response=401,
      *         description="Unauthorized access",
@@ -141,22 +127,21 @@ class PatientMedicationController extends Controller
                 ->with([
                     'medication:id,name,info',
                 ])
-                ->orderByDesc('id')
-                ->paginate(20, ['id', 'medication_id', 'dosage']);
+                ->get(['id', 'medication_id', 'dosage']);
 
-            $pageMedicationIds = $patientMedications->getCollection()->pluck('id')->all();
-            $takenPageIds = empty($pageMedicationIds)
+            $medicationIds = $patientMedications->pluck('id')->all();
+            $takenIds = empty($medicationIds)
                 ? []
                 : PatientMedicationConfirmation::query()
-                    ->whereIn('patient_medication_id', $pageMedicationIds)
+                    ->whereIn('patient_medication_id', $medicationIds)
                     ->whereNotNull('confirmation_date')
                     ->whereDate('confirmation_date', '=', $today)
                     ->pluck('patient_medication_id')
                     ->unique()
                     ->all();
-            $takenIdSet = empty($takenPageIds) ? [] : array_fill_keys($takenPageIds, true);
+            $takenIdSet = empty($takenIds) ? [] : array_fill_keys($takenIds, true);
 
-            $medications = $patientMedications->through(function (PatientMedication $pm) use ($takenIdSet) {
+            $medications = $patientMedications->map(function (PatientMedication $pm) use ($takenIdSet) {
                 return [
                     'name' => $pm->medication?->name,
                     'info' => $pm->medication?->info,
