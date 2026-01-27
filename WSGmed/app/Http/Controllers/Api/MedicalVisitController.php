@@ -125,7 +125,7 @@ class MedicalVisitController extends Controller
             Appointment::query()->create([
                 'patient_id' => $user->id,
                 'staff_id' => null,
-                'staff_role_id' => $data['staff_role_id'],
+                'staff_role_id' => $role->id,
                 'insert_date' => Carbon::now(),
                 'visit_date' => $data['visit_date'],
                 'visit_hour' => $visitHour,
