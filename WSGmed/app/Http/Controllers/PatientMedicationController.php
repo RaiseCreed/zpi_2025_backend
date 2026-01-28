@@ -36,7 +36,7 @@ class PatientMedicationController extends Controller
     {
         $validated = $request->validate([
             'medication_id' => 'required|exists:medications,id',
-            'dosage' => 'required|numeric|min:0',
+            'dosage' => 'required|string|min:0',
             'frequency' => 'required|string',
             'start_date' => 'required|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',

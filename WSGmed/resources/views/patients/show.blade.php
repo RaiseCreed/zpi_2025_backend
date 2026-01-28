@@ -10,6 +10,7 @@
             <h5 class="card-title">{{ $patient->name }} {{ $patient->s_name }}</h5>
             <p class="card-text"><strong>Email:</strong> {{ $patient->email }}</p>
             <p class="card-text"><strong>Data urodzenia:</strong> {{ $patient->date_of_birth }}</p>
+            <p class="card-text"><strong>Status:</strong> {{ $patient->status }}</p>
 
             <a href="{{ route('patients.edit', $patient) }}" class="btn btn-warning">Edytuj</a>
             <form action="{{ route('patients.destroy', $patient) }}" method="POST" class="d-inline"
@@ -20,6 +21,17 @@
             </form>
             <a href="{{ route('patients.index') }}" class="btn btn-secondary">Powrót</a>
         </div>
+
+        @if($patient->status === \app\Models\Patient::STATUS_DISCHARGED)
+            @if($patient->discharge)
+                <a href="{{ route('discharge.edit', $patient) }}" class="btn btn-primary mt-3">Edytuj wypis</a>
+                <textarea class="form-control mt-2" rows="3" readonly>
+                Data wypisu: {{ $patient->discharge->discharge_date }}
+                Uwagi: {{ $patient->discharge->discharge_notes }}</textarea>
+            @else
+                <a href="{{ route('discharge.create', $patient) }}" class="btn btn-primary mt-3">Dodaj wypis</a>
+            @endif
+        @endif
 
         <a href="{{ route('staff_patients.renderAssign', $patient) }}" class="btn btn-primary mt-3">Dodaj nową osobę odpowiedzialną</a>
         Przypisany personel:
@@ -70,7 +82,7 @@
                 <tr>
                     <td>{{ $patientMedication->medication->name }}</td>
                     <td>{{ $patientMedication->medication->info }}</td>
-                    <td>{{ $patientMedication->dosage }} mg</td>
+                    <td>{{ $patientMedication->dosage }}</td>
                     <td>{{ $patientMedication->frequency }}</td>
                     <td>
                         @if($patientMedication->start_date)

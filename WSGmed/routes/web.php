@@ -68,4 +68,8 @@ Route::post('/patients_medications/{patient}', [App\Http\Controllers\PatientMedi
 Route::put('/patients_medications/{patient}/{patientMedication}', [App\Http\Controllers\PatientMedicationController::class, 'update'])->name('patients_medications.update');
 Route::delete('/patients_medications/{patient}/{patientMedication}', [App\Http\Controllers\PatientMedicationController::class, 'destroy'])->name('patients_medications.destroy');
 
+Route::get('/discharge/{patient}/create', [App\Http\Controllers\DischargeLetterController::class, 'create'])->name('discharge.create');
+Route::post('/discharge', [App\Http\Controllers\DischargeLetterController::class, 'store'])->name('discharge.store');
+Route::get('/discharge/{dischargeLetter}/edit', [App\Http\Controllers\DischargeLetterController::class, 'edit'])->name('discharge.edit');
+Route::put('/discharge/{dischargeLetter}', [App\Http\Controllers\DischargeLetterController::class, 'update'])->name('discharge.update');
 });
