@@ -109,7 +109,10 @@
                     </td>
                     <td>
                         <div class="mb-2">
-                            <small class="text-muted">Liczba potwierdzeń: {{ $patientMedication->confirmations->count() }}</small>
+                            <small class="text-muted">Potwierdzenia w tym tygodniu: {{ $patientMedication->confirmations
+                                ->where('confirmation_date', '>=', now()->startOfWeek())
+                                ->where('confirmation_date', '<=', now()->endOfWeek())
+                                ->count() }}</small>
                         </div>
                         @if($patientMedication->confirmations->count() > 0)
                             <details>
@@ -123,9 +126,19 @@
                                 </div>
                             </details>
                         @endif
-                        <button class="btn btn-sm btn-success mt-1" onclick="confirmMedication({{ $patientMedication->id }})">
-                            Potwierdź przyjęcie
-                        </button>
+                        <div class="mt-2">
+                            @php
+                                $todayConfirmation = $patientMedication->confirmations
+                                    ->where('confirmation_date', '>=', now()->startOfDay())
+                                    ->where('confirmation_date', '<=', now()->endOfDay())
+                                    ->first();
+                            @endphp
+                            @if($todayConfirmation)
+                                <span class="badge bg-success">✓ Wziął dzisiaj</span>
+                            @else
+                                <span class="badge bg-secondary">Nie wziął dzisiaj</span>
+                            @endif
+                        </div>
                     </td>
                     <td>
                         <form action="{{ route('patient-medications.destroy', ['patient' => $patient, 'patientMedication' => $patientMedication]) }}" method="POST" onsubmit="return confirm('Na pewno usunąć ten lek?')">
@@ -259,31 +272,6 @@
 <script>
 // Dane rekomendacji z backendu
 const recommendations = @json($patient->recommendations);
-
-function confirmMedication(patientMedicationId) {
-    if (confirm('Czy na pewno potwierdzić przyjęcie leku?')) {
-        fetch(`/patient-medications/${patientMedicationId}/confirm`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('Potwierdzenie zostało dodane!');
-                location.reload();
-            } else {
-                alert('Wystąpił błąd: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Wystąpił błąd podczas dodawania potwierdzenia');
-        });
-    }
-}
 
 function showRecommendation(recommendationId) {
     const recommendation = recommendations.find(r => r.id === recommendationId);
