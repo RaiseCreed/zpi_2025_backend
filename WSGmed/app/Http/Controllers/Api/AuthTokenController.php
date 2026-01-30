@@ -190,7 +190,7 @@ class AuthTokenController extends Controller
             return $this->errorResponse(ApiErrorCodes::VALIDATION_FAILED, $validator->errors());
         }
 
-        $status = Password::sendResetLink(
+        $status = Password::broker('patients')->sendResetLink(
             ['email' => $request->input('email')]
         );
         
