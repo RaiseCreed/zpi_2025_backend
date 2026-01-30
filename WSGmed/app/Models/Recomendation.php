@@ -21,12 +21,12 @@ class Recomendation extends Model
     protected $casts = [
         'date' => 'date:Y-m-d',
     ];
-    
+
     public function patient()
     {
         return $this->belongsTo(Patient::class);
     }
-    
+
     public function staff()
     {
         return $this->belongsTo(Staff::class);

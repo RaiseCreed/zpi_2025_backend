@@ -203,6 +203,7 @@
                 <tr>
                     <th>Data</th>
                     <th>Osoba wystawiająca</th>
+                    <th>Tytuł zalecenia</th>
                     <th>Treść</th>
                     <th>Akcje</th>
                 </tr>
@@ -212,12 +213,13 @@
                 <tr>
                     <td>{{ $recommendation->date }}</td>
                     <td>{{ $recommendation->staff->name }}</td>
+                    <td>{{ $recommendation->tittle }}</td>
                     <td>{{ $recommendation->text }}</td>
                     <td>
                         <button class="btn btn-sm btn-info me-1" onclick="showRecommendation({{ $recommendation->id }})">
                             Podgląd
                         </button>
-                        <form action="{{ route('recommendations.destroy', $recommendation) }}" method="POST" class="d-inline">
+                        <form action="{{ route('recommendations.destroy', $recommendation) }}" method="POST" class="d-inline" onsubmit="return confirm('Na pewno usunąć?')">
                             @csrf
                             @method('DELETE')
                             <button class="btn btn-sm btn-danger">Usuń</button>
@@ -275,13 +277,13 @@ const recommendations = @json($patient->recommendations);
 
 function showRecommendation(recommendationId) {
     const recommendation = recommendations.find(r => r.id === recommendationId);
-    
+
     if (recommendation) {
         document.getElementById('modalDate').textContent = recommendation.date;
         document.getElementById('modalStaff').textContent = recommendation.staff ? recommendation.staff.name : 'Nieznany';
         document.getElementById('modalTitle').textContent = recommendation.tittle || 'Brak tytułu';
         document.getElementById('modalText').textContent = recommendation.text || 'Brak treści';
-        
+
         // Pokaż modal
         const modal = new bootstrap.Modal(document.getElementById('recommendationModal'));
         modal.show();

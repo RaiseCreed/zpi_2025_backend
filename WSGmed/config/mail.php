@@ -40,11 +40,11 @@ return [
         'smtp' => [
             'transport' => 'smtp',
             'scheme' => env('MAIL_SCHEME'),
-            'url' => "smtp://sandbox.smtp.mailtrap.io",
-            'host' => "sandbox.smtp.mailtrap.io",
-            'port' => 2525,
-            'username' => "ec19c6088132b7",
-            'password' => "4c3f1945aee7ac",
+            'url' => env('MAIL_URL'),
+            'host' => env('MAIL_HOST', "sandbox.smtp.mailtrap.io"),
+            'port' => env('MAIL_PORT', 587),
+            'username' => env('MAIL_USERNAME'),
+            'password' => env('MAIL_PASSWORD'),
             'timeout' => null,
             'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url(env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
         ],
@@ -111,8 +111,8 @@ return [
     */
 
     'from' => [
-        'address' => "wsgmed@wsgmed.pl",
-        'name' => "WSGmed",
+        'address' => env('MAIL_FROM_ADDRESS', "wsgmed@wsgmed.pl"),
+        'name' => env('MAIL_FROM_NAME', "WSGmed"),
     ],
 
 ];

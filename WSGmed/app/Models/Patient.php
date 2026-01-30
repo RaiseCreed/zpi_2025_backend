@@ -81,4 +81,14 @@ class Patient extends Authenticatable implements JWTSubject
     {
         return $this->hasOne(DischargeLetter::class);
     }
+    
+    public function setRememberToken($value)
+    {
+    
+    }
+
+    public function getRememberTokenName()
+    {
+        return null;
+    }
 }

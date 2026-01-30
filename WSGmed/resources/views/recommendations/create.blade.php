@@ -11,6 +11,10 @@
             <input type="hidden" name="patient_id" value="{{ $patient->id }}">
             <p><strong>Pacjent:</strong> {{ $patient->name }} {{ $patient->s_name }}</p>
         </div>
+        <div class="mb-3">
+            <label for="record_date">Tytuł wpisu</label>
+            <input type="text" name="tittle" class="form-control">
+        </div>
 
         <div class="mb-3">
             <label for="record_date">Data wpisu</label>
@@ -24,7 +28,9 @@
         style="resize: both;"
         ></textarea>
 
-        @if ($errors->any())
+
+
+    @if ($errors->any())
             <div class="alert alert-danger">
                 <ul>
                     @foreach ($errors->all() as $error)
