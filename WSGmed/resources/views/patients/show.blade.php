@@ -32,6 +32,127 @@
             <a href="{{ route('patients.index') }}" class="btn btn-secondary">Powrót</a>
         </div>
 
+        @if($patient->status === \app\Models\Patient::STATUS_DISCHARGED)
+            @if($patient->discharge)
+                <a href="{{ route('discharge.edit', $patient) }}" class="btn btn-primary mt-3">Edytuj wypis</a>
+                <textarea class="form-control mt-2" rows="3" readonly>
+                Data wypisu: {{ $patient->discharge->discharge_date }}
+                Uwagi: {{ $patient->discharge->discharge_notes }}</textarea>
+            @else
+                <a href="{{ route('discharge.create', $patient) }}" class="btn btn-primary mt-3">Dodaj wypis</a>
+            @endif
+        @endif
+
+        <a href="{{ route('staff_patients.renderAssign', $patient) }}" class="btn btn-primary mt-3">Dodaj nową osobę odpowiedzialną</a>
+        Przypisany personel:
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Imię i nazwisko</th>
+                    <th>Rola</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($patient->staff as $staffMember)
+                <tr>
+                    <td><a href="{{ route("staff.show", $staffMember) }}">{{ $staffMember->name }} {{ $staffMember->s_name }}</a></td>
+                    <td>{{ ucfirst($staffMember->role->name) }}</td>
+                    <td>
+                        <form action="{{ route('staff_patients.unassign', ['staff'=>$staffMember, 'patient'=>$patient]) }}" method="POST" onsubmit="return confirm('Na pewno usunąć?')">
+                            @csrf
+                            @method('DELETE')
+                            <button class="btn btn-sm btn-danger">Usuń</button>
+                        </form>
+                    </td>
+                </tr>
+                @empty
+                <tr><td colspan="10">Brak wpisów</td></tr>
+                @endforelse
+            </tbody>
+        </table>
+
+        <a href="{{ route('patient-medications.create', $patient) }}" class="btn btn-primary mt-3">Przypisz lek</a>
+
+        <!-- Medications Table -->
+        <div class="table-responsive">
+        <table class="table table-bordered w-100">
+            <thead>
+                <tr>
+                    <th>Nazwa leku</th>
+                    <th>Informacje</th>
+                    <th>Dawkowanie</th>
+                    <th>Częstotliwość</th>
+                    <th>Data rozpoczęcia</th>
+                    <th>Data zakończenia</th>
+                    <th>Potwierdzenia</th>
+                    <th>Akcje</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($patient->patientMedications as $patientMedication)
+                <tr>
+                    <td>{{ $patientMedication->medication->name }}</td>
+                    <td>{{ $patientMedication->medication->info }}</td>
+                    <td>{{ $patientMedication->dosage }}</td>
+                    <td>{{ $patientMedication->frequency }}</td>
+                    <td>
+                        @if($patientMedication->start_date)
+                            @if(is_string($patientMedication->start_date))
+                                {{ $patientMedication->start_date }}
+                            @else
+                                {{ $patientMedication->start_date->format('Y-m-d') }}
+                            @endif
+                        @else
+                            Brak
+                        @endif
+                    </td>
+                    <td>
+                        @if($patientMedication->end_date)
+                            @if(is_string($patientMedication->end_date))
+                                {{ $patientMedication->end_date }}
+                            @else
+                                {{ $patientMedication->end_date->format('Y-m-d') }}
+                            @endif
+                        @else
+                            Brak
+                        @endif
+                    </td>
+                    <td>
+                        <div class="mb-2">
+                            <small class="text-muted">Liczba potwierdzeń: {{ $patientMedication->confirmations->count() }}</small>
+                        </div>
+                        @if($patientMedication->confirmations->count() > 0)
+                            <details>
+                                <summary class="btn btn-sm btn-info">Pokaż szczegóły</summary>
+                                <div class="mt-2">
+                                    @foreach($patientMedication->confirmations->sortByDesc('confirmation_date') as $confirmation)
+                                        <div class="small">
+                                            {{ $confirmation->confirmation_date ? $confirmation->confirmation_date->format('Y-m-d H:i') : 'Brak daty' }}
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </details>
+                        @endif
+                        <button class="btn btn-sm btn-success mt-1" onclick="confirmMedication({{ $patientMedication->id }})">
+                            Potwierdź przyjęcie
+                        </button>
+                    </td>
+                    <td>
+                        <form action="{{ route('patient-medications.destroy', ['patient' => $patient, 'patientMedication' => $patientMedication]) }}" method="POST" onsubmit="return confirm('Na pewno usunąć ten lek?')">
+                            @csrf
+                            @method('DELETE')
+                            <button class="btn btn-sm btn-danger">Usuń</button>
+                        </form>
+                    </td>
+                </tr>
+                @empty
+                <tr><td colspan="8">Brak przypisanych leków</td></tr>
+                @endforelse
+            </tbody>
+        </table>
+        </div>
+
         <a href="{{ route('medical-records.create', $patient) }}" class="btn btn-primary mt-3">Dodaj wpis medyczny</a>
         Zapisy medyczne:
 
