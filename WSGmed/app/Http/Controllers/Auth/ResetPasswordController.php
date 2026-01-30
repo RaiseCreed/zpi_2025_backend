@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\Patient;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Foundation\Auth\ResetsPasswords;
 
 class ResetPasswordController extends Controller
@@ -26,4 +28,13 @@ class ResetPasswordController extends Controller
      * @var string
      */
     protected $redirectTo = '/home';
+
+     protected function broker()
+    {
+        $email = request()->input('email');
+        if ($email && Patient::where('email', $email)->exists()) {
+            return Password::broker('patients');
+        }
+        return Password::broker('users');
+    }
 }
