@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\PatientMedication;
+use App\Models\PatientMedicationConfirmation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -182,5 +183,28 @@ class PatientMedicationController extends Controller
             'patientsWithMostMedications',
             'ageGroups'
         ));
+    }
+
+    public function confirm($patientMedicationId)
+    {
+        try {
+            $patientMedication = PatientMedication::findOrFail($patientMedicationId);
+            
+            $confirmation = PatientMedicationConfirmation::create([
+                'patient_medication_id' => $patientMedication->id,
+                'confirmation_date' => now(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Potwierdzenie zostało dodane',
+                'confirmation' => $confirmation
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Wystąpił błąd: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

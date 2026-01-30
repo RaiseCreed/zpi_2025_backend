@@ -11,6 +11,7 @@ class PatientMedication extends Pivot
     use HasFactory;
     
     protected $table = 'patient_medications';
+    protected $primaryKey = 'id'; // nie działa mi ta tabelka, nie było zdefiniowanego 
     
     protected $fillable = [
         'patient_id',
@@ -34,5 +35,10 @@ class PatientMedication extends Pivot
     public function medication()
     {
         return $this->belongsTo(Medication::class);
+    }
+
+    public function confirmations()
+    {
+        return $this->hasMany(PatientMedicationConfirmation::class, 'patient_medication_id', 'id');
     }
 }

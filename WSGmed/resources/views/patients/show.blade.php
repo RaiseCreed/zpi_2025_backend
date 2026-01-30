@@ -74,6 +74,7 @@
                     <th>Częstotliwość</th>
                     <th>Data rozpoczęcia</th>
                     <th>Data zakończenia</th>
+                    <th>Potwierdzenia</th>
                     <th>Akcje</th>
                 </tr>
             </thead>
@@ -107,6 +108,26 @@
                         @endif
                     </td>
                     <td>
+                        <div class="mb-2">
+                            <small class="text-muted">Liczba potwierdzeń: {{ $patientMedication->confirmations->count() }}</small>
+                        </div>
+                        @if($patientMedication->confirmations->count() > 0)
+                            <details>
+                                <summary class="btn btn-sm btn-info">Pokaż szczegóły</summary>
+                                <div class="mt-2">
+                                    @foreach($patientMedication->confirmations->sortByDesc('confirmation_date') as $confirmation)
+                                        <div class="small">
+                                            {{ $confirmation->confirmation_date ? $confirmation->confirmation_date->format('Y-m-d H:i') : 'Brak daty' }}
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </details>
+                        @endif
+                        <button class="btn btn-sm btn-success mt-1" onclick="confirmMedication({{ $patientMedication->id }})">
+                            Potwierdź przyjęcie
+                        </button>
+                    </td>
+                    <td>
                         <form action="{{ route('patient-medications.destroy', ['patient' => $patient, 'patientMedication' => $patientMedication]) }}" method="POST" onsubmit="return confirm('Na pewno usunąć ten lek?')">
                             @csrf
                             @method('DELETE')
@@ -115,7 +136,7 @@
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="7">Brak przypisanych leków</td></tr>
+                <tr><td colspan="8">Brak przypisanych leków</td></tr>
                 @endforelse
             </tbody>
         </table>
@@ -180,7 +201,10 @@
                     <td>{{ $recommendation->staff->name }}</td>
                     <td>{{ $recommendation->text }}</td>
                     <td>
-                        <form action="{{ route('recommendations.destroy', $recommendation) }}" method="POST">
+                        <button class="btn btn-sm btn-info me-1" onclick="showRecommendation({{ $recommendation->id }})">
+                            Podgląd
+                        </button>
+                        <form action="{{ route('recommendations.destroy', $recommendation) }}" method="POST" class="d-inline">
                             @csrf
                             @method('DELETE')
                             <button class="btn btn-sm btn-danger">Usuń</button>
@@ -195,4 +219,85 @@
 
     </div>
 </div>
+
+<!-- Modal for Recommendation Preview -->
+<div class="modal fade" id="recommendationModal" tabindex="-1" aria-labelledby="recommendationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="recommendationModalLabel">Szczegóły rekomendacji</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Data:</strong> <span id="modalDate"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Osoba wystawiająca:</strong> <span id="modalStaff"></span>
+                    </div>
+                </div>
+                <div class="row mb-3" id="modalTitleRow">
+                    <div class="col-12">
+                        <strong>Tytuł:</strong> <span id="modalTitle"></span>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12">
+                        <strong>Treść:</strong>
+                        <div id="modalText" class="mt-2 p-3 border bg-light" style="white-space: pre-wrap;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zamknij</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Dane rekomendacji z backendu
+const recommendations = @json($patient->recommendations);
+
+function confirmMedication(patientMedicationId) {
+    if (confirm('Czy na pewno potwierdzić przyjęcie leku?')) {
+        fetch(`/patient-medications/${patientMedicationId}/confirm`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Potwierdzenie zostało dodane!');
+                location.reload();
+            } else {
+                alert('Wystąpił błąd: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Wystąpił błąd podczas dodawania potwierdzenia');
+        });
+    }
+}
+
+function showRecommendation(recommendationId) {
+    const recommendation = recommendations.find(r => r.id === recommendationId);
+    
+    if (recommendation) {
+        document.getElementById('modalDate').textContent = recommendation.date;
+        document.getElementById('modalStaff').textContent = recommendation.staff ? recommendation.staff.name : 'Nieznany';
+        document.getElementById('modalTitle').textContent = recommendation.tittle || 'Brak tytułu';
+        document.getElementById('modalText').textContent = recommendation.text || 'Brak treści';
+        
+        // Pokaż modal
+        const modal = new bootstrap.Modal(document.getElementById('recommendationModal'));
+        modal.show();
+    }
+}
+</script>
 @endsection
