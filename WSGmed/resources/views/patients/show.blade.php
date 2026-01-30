@@ -191,7 +191,7 @@
                     <th>Data</th>
                     <th>Osoba wystawiająca</th>
                     <th>Tytuł zalecenia</th>
-                    <th class="w-100">Treść</th>
+                    <th>Treść</th>
                     <th>Akcje</th>
                 </tr>
             </thead>
